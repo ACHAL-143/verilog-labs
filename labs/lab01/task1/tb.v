@@ -1,8 +1,9 @@
-// task1b_tb.v
+// tb.v
 // Testbench for FA_Gate. This file is given -- do not modify it.
-// Applies all 8 input combinations, 5 time units apart.
+// Applies all 8 input combinations, 5 time units apart. Used unchanged for
+// both parts (a) and (b) of this task.
 
-module task1b_tb;
+module tb;
   reg  t_a, t_b, t_cin;
   wire t_sum, t_cout;
 
@@ -14,9 +15,13 @@ module task1b_tb;
     .cout (t_cout)
   );
 
+  // Waveform dump configuration
+  string vcd_file;
   initial begin
-    $dumpfile("task1b.vcd");
-    $dumpvars(0, task1b_tb);
+    if ($value$plusargs("vcd=%s", vcd_file)) begin
+      $dumpfile(vcd_file);
+      $dumpvars(0, DUT);
+    end
   end
 
   initial begin

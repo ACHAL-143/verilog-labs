@@ -3,43 +3,60 @@
 
 This is your first hands-on Verilog lab. You've seen the theory lecture but
 have not written or simulated any Verilog yet — that's normal. Every task
-below builds directly on the one before it, so work through them in order.
+builds directly on the one before it, so work through them in order.
 
-Each task has its own folder (`task1a/`, `task1b/`, `task2/`, ...) containing
-the testbench(es) you need and any starter/skeleton code. All testbenches are
-provided — you are not required to write your own for this lab. Files marked
-**"given — do not modify"** should be left exactly as they are; everything
-else contains `TODO` comments marking what you need to fill in.
+Each task has its own folder (`task1/`, `task2/`, ...) containing exactly
+one testbench, always named `tb.v`, plus any starter/skeleton code for that
+task. All testbenches are provided — you are not required to write your own
+for this lab.
 
-Some later tasks reuse modules you completed in earlier ones. When a task
-needs a file from a previous folder, its skeleton file says so explicitly
-("Required file: copy your completed `X.v` from `taskY/` into this folder").
-Copy the file forward rather than rewriting it.
+Files marked **"given — do not modify"** should be left exactly as they
+are; everything else contains `TODO` comments marking what you need to
+fill in. Where a task needs a file you completed in an earlier task, that's
+noted explicitly — copy the completed file forward into the new folder
+rather than rewriting it.
+
+**Waveform dumps:** every `tb.v` includes this block, unchanged:
+```verilog
+// Waveform dump configuration
+string vcd_file;
+initial begin
+  if ($value$plusargs("vcd=%s", vcd_file)) begin
+    $dumpfile(vcd_file);
+    $dumpvars(0, DUT);
+  end
+end
+```
+The `vcd_file` name itself is supplied externally when the simulation is
+run — you don't need to choose or specify a filename yourself.
+
+**Delays:** starting with Task 2, every gate or `assign` statement you
+write in this lab should carry an explicit delay. This isn't a special
+step reserved for one task — from Task 2 onward it's just the default way
+we write Verilog in this lab, and every later skeleton file assumes it.
+
+Tasks 3, 4, and 5 use a **wrapper pattern**: a small `dut.v` module in each
+folder instantiates exactly one of several interchangeable implementations
+(the other two are left commented out). The single `tb.v` in that folder
+tests whatever `dut.v` currently points to. To compare implementations, you
+edit `dut.v` to activate a different one, recompile, and rerun — the
+testbench itself never changes.
 
 ---
 
-## Task 1a — Simulate a given full adder
+## Task 1 — Simulate a full adder, then see if gate order matters
 
-**Folder:** `task1a/`
-**Files:** `FA_Gate.v` (given), `task1a_tb.v` (given)
+**Folder:** `task1/`
+**Files:** `FA_Gate.v` (**edit in place**), `tb.v` (given)
 
-Compile and simulate the provided gate-level full adder against its
-testbench, and view the resulting waveform.
+**(a)** Compile and simulate the provided gate-level full adder against
+`tb.v`, and view the resulting waveform. Confirm `sum` and `cout` match the
+full-adder truth table you already know, at every one of the 8 input
+combinations the testbench applies.
 
-**Question:** Confirm that `sum` and `cout` match the full-adder truth table
-you already know, at every one of the 8 input combinations the testbench
-applies.
-
----
-
-## Task 1b — Does gate order matter?
-
-**Folder:** `task1b/`
-**Files:** `FA_Gate.v` (starter — copy of Task 1a's), `task1b_tb.v` (given)
-
-Reorder the five gate instantiations inside `FA_Gate.v` into any different
-sequence (e.g. move the final `or` to the top, the first `xor` to the
-bottom). Re-simulate with the same testbench.
+**(b)** Now reorder the five gate instantiations inside `FA_Gate.v` into any
+different sequence (e.g. move the final `or` to the top, the first `xor` to
+the bottom). Re-simulate with the same `tb.v`.
 
 **Question:** Does the waveform change? Explain your answer in terms of how
 Verilog gate-level statements actually execute — this is the "all
@@ -48,146 +65,138 @@ something you've verified yourself rather than just read.
 
 ---
 
-## Task 2 — Structural 4-bit ripple-carry adder
+## Task 2 — Delays, and a structural 4-bit ripple-carry adder
 
 **Folder:** `task2/`
-**Files:** `FA_Gate.v` (given), `ripple_adder.v` (**skeleton — complete this**), `task2_tb.v` (given)
+**Files:** `FA_Gate.v` (**edit in place**), `ripple_adder.v` (**skeleton — complete this**), `tb.v` (given)
 
-Complete `ripple_adder.v` by instantiating four `FA_Gate` modules and wiring
-them into a ripple-carry chain, following the `TODO` comments and the named
-port-connection pattern from lecture. Simulate against the provided
-testbench.
+This task introduces gate delays, then uses them immediately to build a
+4-bit ripple-carry adder from four `FA_Gate` instances.
+
+**(a) Constant delays.** Add a constant delay to every gate in
+`FA_Gate.v` (e.g. `xor #(2) (ps, a, b);`). Complete `ripple_adder.v` by
+instantiating four `FA_Gate` modules and wiring them into a ripple-carry
+chain, following the `TODO` comments and the named port-connection pattern
+from lecture. Simulate against `tb.v`.
 
 **Questions:**
 1. Confirm every result in the waveform is arithmetically correct.
 2. The testbench includes the input pair 7+1. Find this transition in the
-   waveform and identify the internal carry wire(s) that change as a result
-   — this is the carry "rippling" through more than one stage.
+   waveform and identify the internal carry wire(s) that change as a
+   result. With delays now present, you should be able to see each carry
+   settle a little later than the one before it — this is the ripple,
+   now visible rather than just asserted in lecture.
+
+**(b) Rise/fall delays.** Go back into `FA_Gate.v` and change every gate's
+delay from a single constant value to a rise/fall pair instead (e.g.
+`xor #(2,3) (ps, a, b);` — rise delay 2, fall delay 3). Re-simulate with
+the *same* `ripple_adder.v` and `tb.v`; nothing else needs to change.
+
+**Question:** Pick one gate whose rise and fall delays you set to different
+values. Find both a 0→1 and a 1→0 transition on that gate's output in the
+waveform, and confirm the timing difference matches what you specified.
 
 ---
 
-## Task 3 — Adding delays, and finally *seeing* the ripple
+## Task 3 — Three ways to build a 4-bit adder
 
 **Folder:** `task3/`
-**Files:** `FA_Gate.v` (starter), `ripple_adder_delay.v` (**skeleton — complete this**), `task3_tb.v` (given)
+**Files:** `rca.v`, `cla4.v`, `cla4_dataflow.v` (**all skeletons — complete these**), `dut.v` (**wrapper — edit which option is active**), `tb.v` (given)
+**Required:** copy your completed `FA_Gate.v` from Task 2 into this folder.
 
-Copy `FA_Gate.v` to `FA_Gate_delay.v`, rename the module, and add a small
-delay to every gate (e.g. `xor #(2) (ps, a, b);`). Then complete
-`ripple_adder_delay.v` using your new delayed full adder, following the same
-chaining pattern as Task 2.
+This task builds three different 4-bit adders and compares them through the
+same testbench, by swapping which one is wired into `dut.v`.
 
-Simulate against the provided testbench, which uses wider time gaps than
-Task 2's so you have room to observe settling.
+**(a) A delayed ripple-carry adder.** Complete `rca.v` — it has the exact
+same structure as Task 2's `ripple_adder`, reusing your already-delayed
+`FA_Gate`. Make sure `dut.v` has Option 1 (`rca`) active, then simulate.
 
-**Questions:**
-1. Zoom into the waveform around the 7+1 transition and look at the internal
-   carries one at a time. You should be able to see each one settle a
-   little later than the one before it. Roughly how many gate-delays does it
-   take before the final `cout` is stable?
-2. Does this match the 2n+1 formula from lecture?
+**(b) A gate-level carry-lookahead adder.** Complete `cla4.v` at the gate
+level, following the P/G-signal and direct-carry-equation comments
+(matching the lecture circuit and Tutorial 3 exactly), with an explicit
+delay on every gate. Switch `dut.v` to Option 2 (`cla4`) and re-simulate
+with the same `tb.v`.
 
----
+*Reflection (no code):* would this hand-instantiated, gate-by-gate approach
+still be reasonable if you needed a 64-bit CLA? Concretely, how many
+literals would the AND term feeding the final carry need?
 
-## Task 4 — Building faster adders
+**(c) The same circuit, with `assign`.** Complete `cla4_dataflow.v` —
+the identical 4-bit CLA, rewritten using dataflow modeling (`assign`
+statements, each with its own delay) instead of gate primitives. Switch
+`dut.v` to Option 3 and re-simulate.
 
-### Task 4a — 4-bit CLA, gate-level
-
-**Folder:** `task4a/`
-**Files:** `CLA4.v` (**skeleton — complete this**), `task4a_tb.v` (given)
-
-Complete `CLA4.v` at the gate level, following the P/G-signal and
-direct-carry-equation comments (matching the lecture circuit and Tutorial 3
-exactly). Simulate against the provided testbench — it uses the same
-stimulus as Task 2's, so you can sanity-check your CLA4 and your
-`ripple_adder` agree on every result.
-
-**Reflection (no code):** would this hand-instantiated, gate-by-gate
-approach still be reasonable if you needed a 64-bit CLA? Concretely, how
-many literals would the AND term feeding the final carry need?
-
-### Task 4b — The same circuit, with `assign`
-
-**Folder:** `task4b/`
-**Files:** `CLA4_dataflow.v` (**skeleton — complete this**), `task4b_tb.v` (given)
-
-Rebuild the identical 4-bit CLA using dataflow modeling (`assign` statements)
-instead of gate primitives, following the `TODO` comments. Simulate against
-the provided testbench (same stimulus as 4a).
-
-**Question:** Compare `CLA4.v` and `CLA4_dataflow.v` side by side — line
+*Reflection:* compare `cla4.v` and `cla4_dataflow.v` side by side — line
 count, readability, how directly each line maps to the Boolean equation it
 implements. Which would you rather maintain or debug six months from now?
 
-### Task 4c — A flat 64-bit CLA
+**Question (all three):** with all three options tested, compare how
+quickly each one's final `sum`/`cout` settle in the waveform on the same
+7+1 test vector.
 
-**Folder:** `task4c/`
-**Files:** `CLA64_flat.v` (**skeleton — complete this**), `task4c_tb.v` (given)
+---
 
-This file extends the same idea to all 64 bits, in two very different ways:
+## Task 4 — Three ways to build a 64-bit adder
 
-- **P and G** are computed with a `generate`-`for` loop (already written for
-  you, and explained in the file's comments) — this part is genuinely
-  uniform across all 64 bits, so a loop is the right tool.
-- **The 64 carry equations** are *not* uniform — each one has a different,
-  growing number of terms. Writing them by hand would be extremely tedious,
-  and a simple loop can't produce them directly. Instead, follow the
-  in-file instructions to use an AI coding assistant to generate these 64
-  `assign` statements from your own C1–C4 equations as the pattern — **and
-  then verify the result yourself** before trusting it (check C1–C4 match
-  your own derivation exactly, then re-derive at least one later equation,
-  e.g. C10 or C32, by hand and confirm it matches).
+**Folder:** `task4/`
+**Files:** `rca64.v`, `cla64_flat.v`, `cla64_blocked.v` (**skeletons — complete these**), `dut.v` (**wrapper**), `tb.v` (given)
+**Required:** copy your completed `FA_Gate.v` (Task 2) and `cla4.v` (Task 3) into this folder.
 
-Simulate against the provided testbench and confirm correctness.
+Same idea as Task 3, scaled up to 64 bits.
 
-**Reflection:** open your own `c[64]` line and count the literals in its
+**(a) A flat 64-bit CLA.** Open `cla64_flat.v`. Its P/G generate/propagate
+logic is already written for you as a worked example, using a
+`generate`-`for` loop — read the comments carefully, since this is the
+first time you've seen `generate` in this lab, and it's genuinely the right
+tool for this part (uniform logic at every one of the 64 bit positions).
+
+The 64 carry equations are a different story: each one has a different,
+growing number of terms, so a simple loop can't produce them directly.
+Follow the in-file instructions to use an AI coding assistant to generate
+these 64 `assign` statements from your own C1–C4 equations (from `cla4.v`)
+as the pattern — **and then verify the result yourself** before trusting
+it: confirm C1–C4 match your own derivation exactly, then re-derive at
+least one later equation (e.g. C10 or C32) by hand and confirm it matches.
+
+Set `dut.v` to Option 2 (`cla64_flat`) and simulate.
+
+*Reflection:* open your own `c[64]` line and count the literals in its
 largest product term. Given that real logic gates rarely exceed 4–8 inputs,
 is this circuit realistically buildable in hardware — even though it just
 simulated correctly?
 
-### Task 4d — A practical 64-bit CLA
+**(b) A practical 64-bit CLA.** Complete `cla64_blocked.v` by instantiating
+sixteen of your `cla4.v` blocks and chaining their carries block-to-block —
+same instantiate-and-chain pattern as Task 2's ripple adder. Set `dut.v` to
+Option 3 and simulate.
 
-**Folder:** `task4d/`
-**Files:** `CLA64_blocked.v` (**skeleton — complete this**), `task4d_tb.v` (given)
-**Required:** copy your completed `CLA4.v` (or `CLA4_dataflow.v`) from Task 4a/4b into this folder.
+**(c) A 64-bit ripple-carry adder, for comparison.** Complete `rca64.v` —
+64 chained `FA_Gate` instances (a `generate`-`for` loop is a reasonable way
+to write this one too, since every stage is structurally identical —
+unlike part (a)'s carry equations). Set `dut.v` to Option 1 and simulate.
 
-Complete `CLA64_blocked.v` by instantiating sixteen of your 4-bit CLA blocks
-and chaining their carries block-to-block — the same instantiate-and-chain
-pattern as Task 2's ripple adder, just with CLA blocks instead of single
-full adders. Simulate against the provided testbench.
-
-### Task 4e — Three-way comparison
-
-**Folder:** `task4e/`
-**Files:** `RCA64.v` (**skeleton — complete this**), `task4e_tb.v` (given)
-**Required:** copy your completed `CLA64_flat.v` (4c), `CLA64_blocked.v` + its `CLA4` dependency (4d), and `FA_Gate_delay.v` (3) into this folder.
-
-Complete `RCA64.v` — a plain 64-bit ripple-carry adder, chaining 64
-`FA_Gate_delay` instances (a `generate`-`for` loop is a reasonable way to
-write this one, since every stage is structurally identical). The provided
-testbench instantiates all three of your 64-bit adders — `RCA64`,
-`CLA64_flat`, `CLA64_blocked` — side by side on identical inputs.
-
-**Questions:**
-1. Using the waveform, compare how much earlier the two CLA-based adders'
-   final sums settle, compared to `RCA64`.
+**Questions (all three):**
+1. Run `tb.v` once per option and compare how much earlier the two
+   CLA-based adders' final sums settle, compared to `rca64`.
 2. Does the speedup roughly match Tutorial 3's predicted numbers?
-3. `CLA64_flat` and `CLA64_blocked` should perform similarly *in this
-   simulation*. Given that, why would a real chip still use the Task 4d
-   design over the Task 4c one?
+3. `cla64_flat` and `cla64_blocked` should perform similarly *in this
+   simulation*. Given that, why would a real chip still use the (b) design
+   over the (a) design?
 
 ---
 
-## Task 5 (Bonus) — The O(log n) adder
+## Task 5 (Bonus, not required for submission) — The O(log n) adder
 
 **Folder:** `task5/`
-**Files:** `CLA64_hier.v` (**open-ended — no detailed skeleton**), `task5_tb.v` (given)
-**Required:** copy your completed `CLA64_blocked.v` and its `CLA4` dependency from Task 4d into this folder.
+**Files:** `cla64_hier.v` (**open-ended — no detailed skeleton**), `dut.v` (given, pre-wired to `cla64_hier`), `tb.v` (given, same as Task 4's)
+**Required:** copy your completed `cla4.v` from Task 4 into this folder.
 
-Apply the same generate/propagate trick to the 16 blocks from Task 4d
+Apply the same generate/propagate trick to the 16 blocks from Task 4(b)
 *themselves*, building a second-level lookahead unit that computes each
 block's carry-in directly, instead of rippling block to block — the scheme
-from Tutorial 3, Q4(d). See the comments in `CLA64_hier.v` for a starting
+from Tutorial 3, Q4(d). See the comments in `cla64_hier.v` for a starting
 point; the rest of the design is up to you.
 
-**Question:** Simulate against the provided testbench and compare your
-final delay to Task 4d's `CLA64_blocked`.
+**Question:** simulate against `tb.v` and compare your final delay to Task
+4(b)'s `cla64_blocked`. If you'd like a direct side-by-side, copy your
+Task 4 files into this folder too and use `dut.v`'s commented-out options.

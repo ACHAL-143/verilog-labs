@@ -1,9 +1,10 @@
-// CLA64_flat.v
+// cla64_flat.v
 // A flat, unblocked 64-bit carry-lookahead adder: every carry is computed
-// directly (two-level, no rippling), exactly like CLA4, just scaled to 64
-// bits.
+// directly (two-level, no rippling), exactly like cla4.v, just scaled to
+// 64 bits. Add delays throughout (same convention as cla4.v) so it can be
+// fairly compared against rca64.v and cla64_blocked.v.
 
-module CLA64_flat(
+module cla64_flat(
   input  [63:0] a,
   input  [63:0] b,
   input         cin,
@@ -26,8 +27,8 @@ module CLA64_flat(
   genvar i;
   generate
     for (i = 0; i < 64; i = i + 1) begin : gen_pg
-      xor (p[i], a[i], b[i]);
-      and (g[i], a[i], b[i]);
+      xor #(2) (p[i], a[i], b[i]);
+      and #(2) (g[i], a[i], b[i]);
     end
   endgenerate
 
@@ -42,20 +43,21 @@ module CLA64_flat(
   //
   // Instead: use an AI coding assistant to generate these 64 `assign`
   // statements.
-  //   - Give it your own C1..C4 equations from Task 4a/4b as the exact
+  //   - Give it your own C1..C4 equations from cla4.v as the exact
   //     pattern to continue.
-  //   - Ask it to produce assign statements for c[1] through c[64]
-  //     following that same pattern.
+  //   - Ask it to produce assign statements (with #(2) delays, matching
+  //     the rest of this file) for c[1] through c[64] following that
+  //     same pattern.
   //
   // YOU are responsible for verifying the result before trusting it --
   // this is not optional:
-  //   (1) Confirm the generated c[1]..c[4] exactly match your own Task 4a/4b
+  //   (1) Confirm the generated c[1]..c[4] exactly match your own cla4.v
   //       equations.
   //   (2) Pick at least one later equation (e.g. c[10] or c[32]), re-derive
   //       it yourself by hand from the recursive definition, and confirm
   //       it matches what was generated.
-  // Do not move on to Task 4c's reflection question until you've done both
-  // checks.
+  // Do not move on to this task's reflection question until you've done
+  // both checks.
   //
   // TODO: paste your verified assign statements for c[1] through c[64] here.
 
@@ -64,6 +66,6 @@ module CLA64_flat(
   // ---------------------------------------------------------------------
   // Step 3: sum bits
   // ---------------------------------------------------------------------
-  // TODO: assign sum = p ^ {c[63:1], cin};
+  // TODO: assign #(2) sum = p ^ {c[63:1], cin};
 
 endmodule

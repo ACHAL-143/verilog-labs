@@ -1,5 +1,6 @@
 // ripple_adder.v
 // Structural 4-bit ripple-carry adder, built from four FA_Gate instances.
+// (Delays live inside FA_Gate.v -- nothing here needs a delay of its own.)
 //
 // TODO: instantiate four FA_Gate modules (name them FA0..FA3) and connect
 // them into a ripple-carry chain, matching the pattern from lecture:
